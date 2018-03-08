@@ -16,23 +16,30 @@ def crawl(url):
             root = elems[1].split('/')[0]
         else:
             root = url.split('/')[0]
-        '''
-        if root == "boomup.chosun.com":
-            continue
-        '''
-    session = dryscrape.Session()
-    session.visit(url)
-    response = session.body()
-    soup = BeautifulSoup(response, 'lxml')
-    for script in soup(['script', 'style']):
-        script.extract()
+    try:
+        session = dryscrape.Session()
+        session.visit(url)
+        response = session.body()
+    except Exception as e:
+        print(e)
+
+    
+    try:
+        soup = BeautifulSoup(response, 'lxml')
+        for script in soup(['script', 'style']):
+            script.extract()
+    except Exception as e:
+        print(e)
 
     rawArticle = soup.find('div', {'id':'articleBodyContents'})
     article = rawArticle.get_text()
     article = article.replace('\t', '')
     article = article.replace('\n', '')
 
-    likeCounts = soup.find_all('span', {'class' : 'u_likeit_list_count _count'})
+    try:
+        likeCounts = soup.find_all('span', {'class' : 'u_likeit_list_count _count'})
+    except Exception as e:
+        print(e)
 
     i = 1
     counts = []
@@ -62,17 +69,17 @@ def crawl(url):
         sad = counts[2]
         angry = counts[3]
         neutral = counts[4]
-
-    if like >= warm and like >= sad and like >= angry and like >= neutral:
-        return "like"
-    elif warm >= like and warm >= sad and warm >= angry and warm >= neutral:
-        return "warm"
-    elif sad >= like and sad >= warm and sad >= angry and sad >= neutral:
-        return "sad"
-    elif angry >= like and angry >= warm and angry >= sad and angry >= neutral:
-        return "angry"
-    elif neutral >= like and neutral >= warm and neutral >= sad and neutral >= angry:
-        return "neutral"
+    try:
+        if like >= warm and like >= sad and like >= angry:
+            return "like"
+        elif warm >= like and warm >= sad and warm >= angry:
+            return "warm"
+        elif sad >= like and sad >= warm and sad >= angry:
+            return "sad"
+        elif angry >= like and angry >= warm and angry >= sad:
+            return "angry"
+    except Exception as e:
+        print(e)
 
 
 if __name__ == '__main__':
@@ -85,7 +92,7 @@ if __name__ == '__main__':
             for filename in files:
                 fullname = os.path.join(path, filename)
                 file_list.append(fullname)
-
+    j = 0
     for file in file_list:
         section = file.split('/')[1]
         classname = file.split('/')[2]
@@ -105,9 +112,6 @@ if __name__ == '__main__':
             os.mkdir('Like_dataset/sad')
         if not os.path.isdir('Like_dataset/angry'):
             os.mkdir('Like_dataset/angry')
-        if not os.path.isdir('Like_dataset/neutral'):
-            os.mkdir('Like_dataset/neutral')
-        j = 0
         for i in range(len(url_list)):
             result = crawl(url_list[i])
             if result == "like":
@@ -126,8 +130,6 @@ if __name__ == '__main__':
                 fp = open('Like_dataset/angry/'+str(j)+'.txt', 'w', encoding='utf-8')
                 fp.write(str(body_raw[i]))
                 fp.close()
-            elif result == "neutral":
-                fp = open('Like_dataset/neutral/'+str(j)+'.txt', 'w', encoding='utf-8')
-                fp.write(str(body_raw[i]))
-                fp.close()
+            sys.stdout.write("\r processed : " + str(j))
+            sys.stdout.flush()
             j += 1
